@@ -43,7 +43,7 @@ systemctl stop firewalld
 # Update hosts file
 echo "[TASK 6] Update /etc/hosts file"
 cat >>/etc/hosts<<EOF
-192.168.50.23 devserver.eduami.org devserver
+192.168.50.24 rabbitserver.eduami.org rabbitserver
 EOF
 
 

@@ -33,3 +33,4 @@ build/
 .vscode/
 /.mvn/
 /spring-cloud-session-2-microservices-dynamic-ports.mp4
+/.vagrant/

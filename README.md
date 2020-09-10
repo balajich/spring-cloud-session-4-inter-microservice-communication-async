@@ -1,4 +1,4 @@
-# Spring Cloud Session 3 Inter Microservice Communication Synchronous
+# Spring Cloud Session 4 Inter Microservice Communication Synchronous
 In  this tutorial we are going to see how microservices communicate with each other. 
 -There are two types of communication between microservice one is synchronous, and the other is asynchronous.
 - In synchronous communication calling microservice **waits** till the called microservice responds.

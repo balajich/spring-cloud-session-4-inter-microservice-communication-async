@@ -1,1 +1,0 @@
-{"rsync":{"/vagrant":{"type":"rsync","guestpath":"/vagrant","hostpath":"C:/Users/balaj/IdeaProjects/spring-cloud-session-4-inter-microservice-communication-async","disabled":false,"__vagrantfile":true,"owner":"vagrant","group":"vagrant"}}}

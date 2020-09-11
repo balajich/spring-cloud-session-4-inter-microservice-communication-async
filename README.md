@@ -1,4 +1,4 @@
-# Spring Cloud Session 4 Inter Microservice Communication Synchronous
+# Spring Cloud Session 4 Inter Microservice Communication ASynchronous using RabbitMQ
 In  this tutorial we are going to see how microservices communicate with each other. 
 -There are two types of communication between microservice one is synchronous, and the other is asynchronous.
 - In synchronous communication calling microservice **waits** till the called microservice responds.
@@ -143,10 +143,25 @@ cloud:
 
 # Next Steps
 - Inter microservice communication in asynchronous fashion
-
+# RabbitMQ Terminology
+- **Producer, publisher** A Producer is the application that is sending the messages to the message queue.
+- **Consumer** A Consumer is the application that receives the messages from the message queue.
+- **Message queue**- A message queue is a queue of messages sent between applications. 
+It allow applications to communicate by sending messages to each other.
+- **Exchange** An exchange is responsible for the routing of the messages to the different queues. An exchange accepts 
+messages from the producer application and routes them to message queues with help of header attributes, bindings, 
+and routing keys
+- **Ack** When RabbitMQ delivers a message to a consumer, it needs to know when to consider the message successfully 
+sent. An ack will acknowledge one or more messages, which tells RabbitMQ that a message/messages has been handled
+- **Binding**  A binding is a "link" that you set up to bind a queue to an exchange.
+- **Channel** A channel is a virtual connection inside a connection. When you are publishing or consuming messages 
+from a queue - it's all done over a channel.
+- 
 # References
+- https://www.baeldung.com/spring-cloud-stream
 - Spring Microservices in Action by John Carnell 
 - Hands-On Microservices with Spring Boot and Spring Cloud: Build and deploy Java microservices 
-using Spring Cloud, Istio, and Kubernetes -Magnus Larsson 
+using Spring Cloud, Istio, and Kubernetes -Magnus Larsson
+- https://www.cloudamqp.com/blog/2017-07-25-RabbitMQ-and-AMQP-concepts-glossary.html 
 # Next Tutorial
 https://github.com/balajich/spring-cloud-session-4-inter-microservice-communication-async

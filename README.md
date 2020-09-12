@@ -14,6 +14,7 @@ send SMS and email.
 - RabbitMQ play a role of mediator or **message bus**
 
 **Flow**
+- Run RabbitMQ server, it binds to port 5672 and admin ui application to port 15672.
 - Run registry service on 8761. 
 - Run employee-api service on dynamic port. Where it takes employee id and returns employee name.
 - Run payroll-api service on dynamic port. Where it takes employee id and returns employee salary.
@@ -46,7 +47,7 @@ sent. An ack will acknowledge one or more messages, which tells RabbitMQ that a 
 - **Binding**  A binding is a "link" that you set up to bind a queue to an exchange.
 - **Channel** A channel is a virtual connection inside a connection. When you are publishing or consuming messages 
 from a queue - it's all done over a channel.
-- **Connection**-A connection is a TCP connection between your application and the RabbitMQ broker
+- **Connection**-A connection is a TCP connection between your application, and the RabbitMQ broker
 # Spring Cloud Stream Concepts
 Spring cloud stream abstracts underneath communication  with Messagebus. This helps to foucs on business logic instead of 
  nettigritty of message bus. We can easily switch from RabbitMQ to Kafka etc without code changes.
@@ -73,11 +74,13 @@ I will be using vagrant to stop or start a virtual machine.
     - ``` cd spring-cloud-session-4-inter-microservice-communication-async ```
     - Bring virtual machine up ``` vagrant up ```
     - ssh to virtual machine ```vagrant ssh ```
+    - Switch to root user ``` sudo su - ```
     - Change folder where docker-compose files is available ```cd /vagrant```
     - Start RabbitMQ Server using docker-compose ``` docker-compose up -d ```
 - Java
     - ``` mvn clean install ```
- 
+# RabbitMQ Server UI
+![RabbitMQUI](RabbitMQUI.png "RabbitMQUI")
 # Running components
 - Registry: ``` java -jar .\registry\target\registry-0.0.1-SNAPSHOT.jar ```
 - Employee API: ``` java -jar .\employee-api\target\employee-api-0.0.1-SNAPSHOT.jar ```
@@ -89,86 +92,87 @@ I will be using vagrant to stop or start a virtual machine.
 # Using curl to test environment
 **Note I am running CURL on windows, if you have any issue. Please use postman client, its collection is available 
 at spring-cloud-session-3-inter-microservice-communication-sync.postman_collection.json**
-- Get employee report using report api ( direct): ``` curl -s -L  http://localhost:8080/report-api-direct/100 ```
-- Get employee report using report-api-via-gateway: ``` curl -s -L  http://localhost:8080/report-api-via-gateway/100 ```
+- Access RabbitMQ UI: ```http://localhost:15672/  ```
+- RabbitMQ defaults username/password: ``` guest/guest ```
+- Get employee report using report api ( direct): ``` curl -s -L  http://localhost:8080/report-api/100 ```
 
-**Note: In real world we favour to call microservices via a gateway even for inter communication. So I recommend using 
-the  microservice report-api-via-gateway**  
+  
 # Code
-In this section will focus only on report-api and how communicates employee-api,payroll-api. 
+In this section will focus only on report-api code which publishes employee details to queue **queue.email** 
 
-*ReportController* in app **report-api-direct**. RestTemplate calls eureka ribbon client which fetches "employee-api,payroll-api" information from registry 
-and calls the microservices directly. The **@LoadBalanced** annotation makes ribbon client to round-robbin requests if there are multiple instances of them.
+*ReportController* in app **report-api**.  @SendTo(Processor.OUTPUT) makes the function to invoke RabbitMQ and writes
+details to MQ.
 ```java
-@Autowired
-    RestTemplate restTemplate;
-
-    @RequestMapping(value = "/report-api-direct/{employeeId}", method = RequestMethod.GET)
+    @SendTo(Processor.OUTPUT)
     public Employee getEmployeeDetails(@PathVariable int employeeId) {
-        logger.info(String.format("Getting Complete Details of Employee with id %s", employeeId));
-        //Get employee name from employee-api
-        Employee responseEmployeeNameDetails = restTemplate.getForEntity("http://employee-api/employee/" + employeeId, Employee.class).getBody();
-        //Get employee salary from payroll-api
-        Employee responseEmployeePayDetails = restTemplate.getForEntity("http://payroll-api/payroll/" + employeeId, Employee.class).getBody();
-        return new Employee(responseEmployeeNameDetails.getId(), responseEmployeeNameDetails.getName(), responseEmployeePayDetails.getSalary());
-    }
-
-    @Bean
-    @LoadBalanced
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
+       
+        Employee finalEmployee = new Employee(responseEmployeeNameDetails.getId(), responseEmployeeNameDetails.getName(), responseEmployeePayDetails.getSalary());
+        // Send to message bus
+        processor.output().send(MessageBuilder.withPayload(finalEmployee).build());
+       
     }
 ```
-*ReportController* in app **report-api-via-gateway**. RestTemplate calls eureka ribbon client which fetches "gateway" information from registry 
-and calls the employee,payroll api via gateway. The **@LoadBalanced** annotation makes ribbon client to round-robbin requests if there are multiple instances of them.
-```java
-  @Autowired
-    RestTemplate restTemplate;
-
-    @RequestMapping(value = "/report-api-via-gateway/{employeeId}", method = RequestMethod.GET)
-    public Employee getEmployeeDetails(@PathVariable int employeeId) {
-        logger.info(String.format("Getting Complete Details of Employee with id %s", employeeId));
-        //Get employee name from employee-api via gateway
-        Employee responseEmployeeNameDetails = restTemplate.getForEntity("http://gateway/employee/" + employeeId, Employee.class).getBody();
-        //Get employee salary from payroll-api via gateway
-        Employee responseEmployeePayDetails = restTemplate.getForEntity("http://gateway/payroll/" + employeeId, Employee.class).getBody();
-        return new Employee(responseEmployeeNameDetails.getId(), responseEmployeeNameDetails.getName(), responseEmployeePayDetails.getSalary());
-    }
-
-    @Bean
-    @LoadBalanced
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
-```
-**Gateway**
+**application.yml** in report-api. 
 ```yaml
-cloud:
-    loadbalancer:
-      ribbon:
-        enabled: false
-    gateway:
-      routes:
-        - id: employee-api
-          uri: lb://EMPLOYEE-API
-          predicates:
-            - Path=/employee/**
-        - id: payroll-api
-          uri: lb://PAYROLL-API
-          predicates:
-            - Path=/payroll/**
-        - id: report-api-direct
-          uri: lb://REPORT-API-DIRECT
-          predicates:
-            - Path=/report-api-direct/**
-        - id: report-api-via-gateway
-          uri: lb://REPORT-API-VIA-GATEWAY
-          predicates:
-            - Path=/report-api-via-gateway/**
+ cloud:
+    stream:
+      bindings:
+        output:
+          destination: queue.email
+          binder: local_rabbit
+      binders:
+        local_rabbit:
+          type: rabbit
+          environment:
+            spring:
+              rabbitmq:
+                host: localhost
+                port: 5672
+                username: guest
+                password: guest
+                virtual-host: /
 ```
+mail-client code that reads messages from queue. @StreamListener(Processor.INPUT) reads data from queue **email.queue**
+```java
+@SpringBootApplication
+@EnableBinding(Processor.class)
+public class MailClientApplication {
 
-# Next Steps
-- Inter microservice communication in asynchronous fashion
+    public static void main(String[] args) {
+        SpringApplication.run(MailClientApplication.class, args);
+    }
+
+    @StreamListener(Processor.INPUT)
+    public void receivedEmail(Employee employee) {
+        System.out.println("Received employee details: " + employee);
+        System.out.println("Sending email and sms: "+employee.getName());
+    }
+
+}
+```
+**application.yml** of mail-client
+```yaml
+application:
+    name: email-api
+  cloud:
+    stream:
+      bindings:
+        input:
+          destination: queue.email
+          binder: local_rabbit
+          group: emailconsumers
+      binders:
+        local_rabbit:
+          type: rabbit
+          environment:
+            spring:
+              rabbitmq:
+                host: localhost
+                port: 5672
+                username: guest
+                password: guest
+                virtual-host: /
+```
 # References
 - https://www.baeldung.com/spring-cloud-stream
 - Spring Microservices in Action by John Carnell 
@@ -176,4 +180,5 @@ cloud:
 using Spring Cloud, Istio, and Kubernetes -Magnus Larsson
 - https://www.cloudamqp.com/blog/2017-07-25-RabbitMQ-and-AMQP-concepts-glossary.html 
 # Next Tutorial
-https://github.com/balajich/spring-cloud-session-4-inter-microservice-communication-async
+We will learn how to use kafk as message bus
+- https://github.com/balajich/spring-cloud-session-4-inter-microservice-communication-async-kafka

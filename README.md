@@ -86,7 +86,7 @@ I will be using vagrant to stop or start a virtual machine.
 - Employee API: ``` java -jar .\employee-api\target\employee-api-0.0.1-SNAPSHOT.jar ```
 - Payroll API: ``` java -jar .\payroll-api\target\payroll-api-0.0.1-SNAPSHOT.jar ```
 - Report API: ``` java -jar .\report-api\target\report-api-0.0.1-SNAPSHOT.jar ```
-- Mail App: ``` java -jar .\mail-client\target\mail-client-0.0.1-SNAPSHOT.jar ```
+- Mail Client App: ``` java -jar .\mail-client\target\mail-client-0.0.1-SNAPSHOT.jar ```
 - Gateway: ``` java -jar .\gateway\target\gateway-0.0.1-SNAPSHOT.jar ``` 
 
 # Using curl to test environment

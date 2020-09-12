@@ -10,7 +10,7 @@ to message bus.
 - Mail microservice listens on the bus for employee details and when those details are available on bus. It is going to read
 send SMS and email.  
 - report-api play a role of **Producer**
-- mail microservice plays a role of **Consumer**
+- mail-client microservice plays a role of **Consumer**
 - RabbitMQ play a role of mediator or **message bus**
 
 **Flow**
@@ -20,8 +20,8 @@ send SMS and email.
 - Run payroll-api service on dynamic port. Where it takes employee id and returns employee salary.
 - Run report-api service on dynamic port. Where it takes employee id and returns employee name and salary by 
 directly communicating with employee-api and payroll-api. **It also publishes employee details to message bus**
-- Run mail service (it is not a rest api, it a java process and doesnt bind to any port). **Where it subscribes to message bus*** 
-for employee details message and sends mail,sms.
+- Run mail-client service (it is not a rest api, it a java process and doesnt bind to any port). **Where it subscribes
+ to message bus** for employee details message and sends mail,sms.
 - Run Gateway service on 8080 and reverse proxy requests to all the services (employee-api,payroll-api,report-api)
 - All the microservices (employee-api,payroll-api,report-api,gateway) when they startup they register their service endpoint (rest api url)
  with registry
@@ -30,7 +30,7 @@ It reads a registry for microservice endpoints and configures routes.
 
 Important Notes
 - Netflix Eureka Server plays a role of Registry. Registry is a spring boot application with Eureka Server as dependency.
-- Netflix Eureka Client is present in all the micro services (employee-api,payroll-api,report-api-direct,report-api-via-gateway,gateway) and they discover Eureka
+- Netflix Eureka Client is present in all the micro services (employee-api,payroll-api,report-api,gateway) and they discover Eureka
 server and register their availability with server.
 - Generally Netflix Ribbon Component is used as Client Side load balancer, but it is deprecated project. We will be using
 Spring Cloud Load balaner in gateway 
@@ -57,7 +57,7 @@ Spring cloud stream abstracts underneath communication  with Messagebus. This he
  
 
 # Source Code 
-``` git clone https://github.com/balajich/spring-cloud-session-3-inter-microservice-communication-sync.git``` 
+``` git clone https://github.com/balajich/spring-cloud-session-4-inter-microservice-communication-async.git``` 
 # Video
 [![Spring Cloud Session 2 Microservices Dynamic ports](https://img.youtube.com/vi/5WuallBaMnw/0.jpg)](https://www.youtube.com/watch?v=5WuallBaMnw)
 - https://youtu.be/5WuallBaMnw

@@ -1,30 +1,28 @@
 # Spring Cloud Session 4 Inter Microservice Communication ASynchronous using RabbitMQ
-In  this tutorial we are going to see how microservices communicate with each other. 
--There are two types of communication between microservice one is synchronous, and the other is asynchronous.
-- In synchronous communication calling microservice **waits** till the called microservice responds.
-- In asynchronous communication calling microservice will **not wait** till the called microservice responds.
-- In this session we focus on Synchronous communication.
-- There are two ways a microservice can communicate with other microservices
-    - Direct: Microservice A speaks with  Microservice B Directly
-    - Via Gateway: Instead of taking directly, Microservice A speaks with  Microservice B via gateway 
-- This tutorial covers both the scenarios
-- We will be developing report api which gives employee name,salary by communicating with employee-api,payroll-api
-- For the purpose of this tutorial we developed two microservices
-    - report-api-direct which calls employee-api,payroll-api directly
-    - report-api-via-gateway calls employee-api,payroll-api via gateway
-- **Note: In real world we favour to call microservices via a gateway even for inter communication. So I recommend using 
-the  microservice report-api-via-gateway**  
+In  this tutorial we are going to learn how microservices communicate with each other in asynchronous fashion. In asynchronous 
+communication calling microservice will **not wait** till the called microservice responds. This pattern can be achieved 
+with message bus infrastructures like Kafka or RabbitMQ.Here we use **Spring Cloud Stream** framework to communicate 
+with message bus.
 
 **Overview**
+- When report-api microservice receives a request to get employee details it is going to fetch details and write results
+to message bus.
+- Mail microservice listens on the bus for employee details and when those details are available on bus. It is going to read
+send SMS and email.  
+- report-api play a role of **Producer**
+- mail microservice plays a role of **Consumer**
+- RabbitMQ play a role of mediator or **message bus**
+
+**Flow**
 - Run registry service on 8761. 
 - Run employee-api service on dynamic port. Where it takes employee id and returns employee name.
 - Run payroll-api service on dynamic port. Where it takes employee id and returns employee salary.
-- Run report-api-direct service on dynamic port. Where it takes employee id and returns employee name and salary by 
-directly communicating with employee-api and payroll-api.
-- Run report-api-via-gateway service on dynamic port. Where it takes employee id and returns employee name and salary by 
-directly communicating with employee-api and payroll-api indirectly via gateway.
-- Run Gateway service on 8080 and reverse proxy requests to all the services (employee-api,payroll-api,report-api-direct,report-api-via-gateway)
-- All the microservices (employee-api,payroll-api,report-api-direct,report-api-via-gateway,gateway) when they startup they register their service endpoint (rest api url)
+- Run report-api service on dynamic port. Where it takes employee id and returns employee name and salary by 
+directly communicating with employee-api and payroll-api. **It also publishes employee details to message bus**
+- Run mail service (it is not a rest api, it a java process and doesnt bind to any port). **Where it subscribes to message bus*** 
+for employee details message and sends mail,sms.
+- Run Gateway service on 8080 and reverse proxy requests to all the services (employee-api,payroll-api,report-api)
+- All the microservices (employee-api,payroll-api,report-api,gateway) when they startup they register their service endpoint (rest api url)
  with registry
 - Gateway Spring Cloud load balancer (Client side load balancing) component in Spring Cloud Gateway acts as reverse proxy.
 It reads a registry for microservice endpoints and configures routes. 
@@ -35,6 +33,26 @@ Important Notes
 server and register their availability with server.
 - Generally Netflix Ribbon Component is used as Client Side load balancer, but it is deprecated project. We will be using
 Spring Cloud Load balaner in gateway 
+# RabbitMQ Terminology
+- **Producer, publisher** A Producer is the application that is sending the messages to the message queue.
+- **Consumer** A Consumer is the application that receives the messages from the message queue.
+- **Message queue**- A message queue is a queue of messages sent between applications. 
+It allow applications to communicate by sending messages to each other.
+- **Exchange** An exchange is responsible for the routing of the messages to the different queues. An exchange accepts 
+messages from the producer application and routes them to message queues with help of header attributes, bindings, 
+and routing keys
+- **Ack** When RabbitMQ delivers a message to a consumer, it needs to know when to consider the message successfully 
+sent. An ack will acknowledge one or more messages, which tells RabbitMQ that a message/messages has been handled
+- **Binding**  A binding is a "link" that you set up to bind a queue to an exchange.
+- **Channel** A channel is a virtual connection inside a connection. When you are publishing or consuming messages 
+from a queue - it's all done over a channel.
+- **Connection**-A connection is a TCP connection between your application and the RabbitMQ broker
+# Spring Cloud Stream Concepts
+Spring cloud stream abstracts underneath communication  with Messagebus. This helps to foucs on business logic instead of 
+ nettigritty of message bus. We can easily switch from RabbitMQ to Kafka etc without code changes.
+ - **Bindings** — a collection of interfaces that identify the input and output channels.
+- **Channel** — represents the communication pipe between messaging-middleware and the application.
+- **StreamListeners**- Listens to messages on Input channel and serializes them to java objects.
  
 
 # Source Code 
@@ -47,17 +65,25 @@ Spring Cloud Load balaner in gateway
 # Prerequisite
 - JDK 1.8 or above
 - Apache Maven 3.6.3 or above
-# Clean and Build
+- Vagrant, Virtualbox (To run RabbitMQ Server)
+# Start RabbitMQ Server and Build Microservices
+We will be running RabbitMQ server inside a docker container. I am running docker container on CentOS7 virtual machine. 
+I will be using vagrant to stop or start a virtual machine.
+- RabbitMQ Server
+    - ``` cd spring-cloud-session-4-inter-microservice-communication-async ```
+    - Bring virtual machine up ``` vagrant up ```
+    - ssh to virtual machine ```vagrant ssh ```
+    - Change folder where docker-compose files is available ```cd /vagrant```
+    - Start RabbitMQ Server using docker-compose ``` docker-compose up -d ```
 - Java
-    - ``` cd spring-cloud-session-3-inter-microservice-communication-sync ``` 
     - ``` mvn clean install ```
  
 # Running components
 - Registry: ``` java -jar .\registry\target\registry-0.0.1-SNAPSHOT.jar ```
 - Employee API: ``` java -jar .\employee-api\target\employee-api-0.0.1-SNAPSHOT.jar ```
 - Payroll API: ``` java -jar .\payroll-api\target\payroll-api-0.0.1-SNAPSHOT.jar ```
-- Report API Direct: ``` java -jar .\report-api-direct\target\report-api-direct-0.0.1-SNAPSHOT.jar ```
-- Report API via gateway: ``` java -jar .\report-api-via-gateway\target\report-api-via-gateway-0.0.1-SNAPSHOT.jar ```
+- Report API: ``` java -jar .\report-api\target\report-api-0.0.1-SNAPSHOT.jar ```
+- Mail App: ``` java -jar .\mail-client\target\mail-client-0.0.1-SNAPSHOT.jar ```
 - Gateway: ``` java -jar .\gateway\target\gateway-0.0.1-SNAPSHOT.jar ``` 
 
 # Using curl to test environment
@@ -143,20 +169,6 @@ cloud:
 
 # Next Steps
 - Inter microservice communication in asynchronous fashion
-# RabbitMQ Terminology
-- **Producer, publisher** A Producer is the application that is sending the messages to the message queue.
-- **Consumer** A Consumer is the application that receives the messages from the message queue.
-- **Message queue**- A message queue is a queue of messages sent between applications. 
-It allow applications to communicate by sending messages to each other.
-- **Exchange** An exchange is responsible for the routing of the messages to the different queues. An exchange accepts 
-messages from the producer application and routes them to message queues with help of header attributes, bindings, 
-and routing keys
-- **Ack** When RabbitMQ delivers a message to a consumer, it needs to know when to consider the message successfully 
-sent. An ack will acknowledge one or more messages, which tells RabbitMQ that a message/messages has been handled
-- **Binding**  A binding is a "link" that you set up to bind a queue to an exchange.
-- **Channel** A channel is a virtual connection inside a connection. When you are publishing or consuming messages 
-from a queue - it's all done over a channel.
-- 
 # References
 - https://www.baeldung.com/spring-cloud-stream
 - Spring Microservices in Action by John Carnell 

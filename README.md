@@ -180,5 +180,5 @@ application:
 using Spring Cloud, Istio, and Kubernetes -Magnus Larsson
 - https://www.cloudamqp.com/blog/2017-07-25-RabbitMQ-and-AMQP-concepts-glossary.html 
 # Next Tutorial
-We will learn how to use kafk as message bus
+We will learn how to use kafka as message bus
 - https://github.com/balajich/spring-cloud-session-4-inter-microservice-communication-async-kafka

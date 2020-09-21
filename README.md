@@ -14,7 +14,7 @@ send SMS and email.
 - RabbitMQ play a role of mediator or **message bus**
 
 **Flow**
-- Run RabbitMQ server, it binds to port 5672 and admin ui application to port 15672.
+- Run RabbitMQ server, it binds to port 5672 and admin ui (Control Center web interface) application to port 9021.
 - Run registry service on 8761. 
 - Run employee-api service on dynamic port. Where it takes employee id and returns employee name.
 - Run payroll-api service on dynamic port. Where it takes employee id and returns employee salary.
@@ -179,6 +179,8 @@ application:
 - Hands-On Microservices with Spring Boot and Spring Cloud: Build and deploy Java microservices 
 using Spring Cloud, Istio, and Kubernetes -Magnus Larsson
 - https://www.cloudamqp.com/blog/2017-07-25-RabbitMQ-and-AMQP-concepts-glossary.html 
+# FAQ
+- https://github.com/balajich/Spring-Cloud-Sessions-Microservices-FAQ/blob/master/README.md
 # Next Tutorial
 We will learn how to use kafka as message bus
 - https://github.com/balajich/spring-cloud-session-4-inter-microservice-communication-async-kafka
